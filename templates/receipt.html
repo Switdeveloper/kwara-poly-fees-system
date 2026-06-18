@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="receipt-box text-center">
+    <h4 class="mb-1">📄 KWARA STATE POLYTECHNIC</h4>
+    <p class="text-muted">Payment Receipt</p>
+    <hr>
+    <h5 class="text-primary">{{ r.receipt_no }}</h5>
+    <hr>
+    <div class="text-start">
+        <p><strong>Student:</strong> {{ r.fullname }}</p>
+        <p><strong>Matric:</strong> {{ r.matric }}</p>
+        <p><strong>Department:</strong> {{ r.department }} ({{ r.level }})</p>
+        <p><strong>Fee Type:</strong> {{ r.fee_type }}</p>
+        <p><strong>Amount:</strong> ₦{{ "{:,.0f}".format(r.amount_paid) }}</p>
+        <p><strong>Date:</strong> {{ r.payment_date }}</p>
+        <p><strong>Method:</strong> {{ r.payment_method }}</p>
+    </div>
+    <hr>
+    <p class="text-muted small">Scan QR to verify payment</p>
+    <img src="data:image/png;base64,{{ qr_b64 }}" class="qr-placeholder" alt="QR Code">
+    <hr>
+    <div class="d-flex gap-2 justify-content-center">
+        <button onclick="window.print()" class="btn btn-primary">🖨️ Print</button>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">← Back</a>
+    </div>
+</div>
+{% endblock %}

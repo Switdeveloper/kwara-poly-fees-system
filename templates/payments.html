@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12"><h2>📋 All Payments</h2></div>
+</div>
+<div class="card p-3">
+    <input type="text" id="searchPayments" class="form-control mb-2" placeholder="Search by receipt, matric, or name...">
+    <div style="max-height:500px;overflow-y:auto">
+    <table class="table table-sm" id="paymentsTable">
+        <thead><tr><th>Receipt</th><th>Student</th><th>Fee Type</th><th>Amount</th><th>Date</th><th>Method</th><th>Action</th></tr></thead>
+        <tbody>
+            {% for p in payments %}
+            <tr>
+                <td>{{ p.receipt_no }}</td>
+                <td>{{ p.fullname }}<br><small class="text-muted">{{ p.matric }}</small></td>
+                <td>{{ p.fee_type }}</td>
+                <td>₦{{ "{:,.0f}".format(p.amount_paid) }}</td>
+                <td>{{ p.payment_date }}</td>
+                <td>{{ p.payment_method }}</td>
+                <td><a href="{{ url_for('receipt', receipt_no=p.receipt_no) }}" class="btn btn-sm btn-outline-primary">View Receipt</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted">No payments recorded</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('searchPayments')?.addEventListener('keyup', function(){
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('#paymentsTable tbody tr').forEach(r => {
+        r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

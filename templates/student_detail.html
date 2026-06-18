@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h2>👤 {{ s.fullname }}</h2>
+        <a href="{{ url_for('students_page') }}" class="btn btn-outline-secondary btn-sm">← Back</a>
+    </div>
+</div>
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card p-3">
+            <h5>Student Info</h5>
+            <p><strong>Matric:</strong> {{ s.matric }}</p>
+            <p><strong>Department:</strong> {{ s.department }}</p>
+            <p><strong>Level:</strong> {{ s.level }}</p>
+            <p><strong>Session:</strong> {{ s.session }}</p>
+            <p><strong>Registered:</strong> {{ s.created_at }}</p>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card p-3">
+            <h5>Payment History</h5>
+            <table class="table table-sm">
+                <thead><tr><th>Receipt</th><th>Fee Type</th><th>Amount</th><th>Date</th><th>Action</th></tr></thead>
+                <tbody>
+                    {% for p in payments %}
+                    <tr>
+                        <td>{{ p.receipt_no }}</td>
+                        <td>{{ p.fee_type }}</td>
+                        <td>₦{{ "{:,.0f}".format(p.amount_paid) }}</td>
+                        <td>{{ p.payment_date }}</td>
+                        <td><a href="{{ url_for('receipt', receipt_no=p.receipt_no) }}" class="btn btn-sm btn-outline-primary">Receipt</a></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="text-center text-muted">No payments yet</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <hr>
+            <h6>Outstanding Balance</h6>
+            <p class="text-danger fs-5">₦{{ "{:,.0f}".format(outstanding) }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

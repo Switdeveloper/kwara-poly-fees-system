@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12"><h2>✅ Verify Payment via QR</h2></div>
+</div>
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h5>Scan QR Code Image</h5>
+            <p class="text-muted small">Upload a screenshot/photo of the QR code from the receipt</p>
+            <form id="qrUploadForm">
+                <input type="file" id="qrImageInput" accept="image/*" capture="environment" class="form-control mb-2">
+                <button type="submit" class="btn btn-primary w-100" id="scanBtn">📷 Scan QR</button>
+            </form>
+            <div id="scanStatus" class="mt-2 small"></div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h5>Or Paste QR Data</h5>
+            <p class="text-muted small">If you already have the QR text, paste it here</p>
+            <form method="POST">
+                <input type="text" name="qr_text" class="form-control mb-2" placeholder="KWP:RECEIPT_NO:MATRIC:AMOUNT:DATE">
+                <button type="submit" class="btn btn-success w-100">🔍 Verify</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if result %}
+<div class="card p-4 mt-4 text-center {% if result.valid %}border-success{% else %}border-danger{% endif %}">
+    {% if result.valid %}
+    <h3 class="text-success">✅ Payment Verified!</h3>
+    <hr>
+    <p><strong>Receipt:</strong> {{ result.receipt_no }}</p>
+    <p><strong>Student:</strong> {{ result.student_name }} ({{ result.matric }})</p>
+    <p><strong>Department:</strong> {{ result.department }} ({{ result.level }})</p>
+    <p><strong>Fee:</strong> {{ result.fee_type }}</p>
+    <p><strong>Amount:</strong> {{ result.amount }}</p>
+    <p><strong>Date:</strong> {{ result.date }}</p>
+    {% if result.verified %}
+    <span class="badge bg-success fs-6">Officially Verified ✅</span>
+    {% else %}
+    <span class="badge bg-warning fs-6">Recorded (Not Officially Verified)</span>
+    {% endif %}
+    {% else %}
+    <h3 class="text-danger">❌ {{ result.message }}</h3>
+    <p>This receipt could not be verified. It may be invalid or tampered with.</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('qrUploadForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    const fileInput = document.getElementById('qrImageInput');
+    const status = document.getElementById('scanStatus');
+    const scanBtn = document.getElementById('scanBtn');
+    if(!fileInput.files.length) { status.innerHTML = '<span class="text-danger">Please select an image</span>'; return; }
+    const formData = new FormData();
+    formData.append('qr_image', fileInput.files[0]);
+    scanBtn.disabled = true;
+    scanBtn.textContent = '⏳ Scanning...';
+    status.innerHTML = '<span class="text-info">Scanning QR code...</span>';
+    fetch('/verify_qr_image', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            if(data.error) {
+                status.innerHTML = `<span class="text-danger">${data.error}</span>`;
+            } else if(data.text) {
+                // Auto-submit the form with the decoded QR text
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'qr_text';
+                input.value = data.text;
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+            }
+            scanBtn.disabled = false;
+            scanBtn.textContent = '📷 Scan QR';
+        })
+        .catch(err => {
+            status.innerHTML = `<span class="text-danger">Error: ${err}</span>`;
+            scanBtn.disabled = false;
+            scanBtn.textContent = '📷 Scan QR';
+        });
+});
+</script>
+{% endblock %}

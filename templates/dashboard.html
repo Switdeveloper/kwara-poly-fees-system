@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12"><h2>📊 Dashboard</h2><p class="text-muted">Welcome, {{ session.admin_name }}</p></div>
+</div>
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card p-3 stat-card">
+            <h6 class="text-muted">Total Students</h6>
+            <h3 class="mb-0">{{ students }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 stat-card green">
+            <h6 class="text-muted">Payments Today</h6>
+            <h3 class="mb-0">{{ payments_today }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 stat-card orange">
+            <h6 class="text-muted">Amount Today</h6>
+            <h3 class="mb-0">₦{{ "{:,.0f}".format(amount_today) }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 stat-card purple">
+            <h6 class="text-muted">Total Collected</h6>
+            <h3 class="mb-0">₦{{ "{:,.0f}".format(total) }}</h3>
+        </div>
+    </div>
+</div>
+<div class="card p-3">
+    <h5>Recent Payments</h5>
+    <table class="table table-sm">
+        <thead><tr><th>Receipt</th><th>Student</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead>
+        <tbody>
+            {% for r in recent %}
+            <tr>
+                <td><a href="{{ url_for('receipt', receipt_no=r.receipt_no) }}">{{ r.receipt_no }}</a></td>
+                <td>{{ r.fullname }}<br><small class="text-muted">{{ r.matric }}</small></td>
+                <td>₦{{ "{:,.0f}".format(r.amount_paid) }}</td>
+                <td>{{ r.payment_date }}</td>
+                <td>{% if r.verified %}✅ Verified{% else %}⬜ Unverified{% endif %}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-muted">No payments yet</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

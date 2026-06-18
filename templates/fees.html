@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12"><h2>💵 Fee Types</h2></div>
+</div>
+<div class="card p-4">
+    <table class="table">
+        <thead><tr><th>Fee Type</th><th>Amount</th><th>Session</th><th>Description</th></tr></thead>
+        <tbody>
+            {% for f in fees %}
+            <tr>
+                <td>{{ f.fee_type }}</td>
+                <td>₦{{ "{:,.0f}".format(f.amount) }}</td>
+                <td>{{ f.session }}</td>
+                <td>{{ f.description }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

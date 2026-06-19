@@ -263,26 +263,60 @@ def verify_page():
 @app.route('/verify_qr_image', methods=['POST'])
 def verify_qr_image():
     if 'qr_image' not in request.files:
-        return jsonify({'error': 'No image provided'})
+        return jsonify({'error': 'No image uploaded. Please select a QR photo first.'})
     f = request.files['qr_image']
-    tmp = os.path.join(BASE_DIR, 'tmp_qr.png')
-    f.save(tmp)
+    if not f or not f.filename:
+        return jsonify({'error': 'No image selected.'})
+
+    # Save with a stable, fresh tmp path
+    import tempfile
+    tmp_fd, tmp = tempfile.mkstemp(suffix='.png', prefix='qr_', dir=BASE_DIR)
+    os.close(tmp_fd)
     try:
-        import subprocess
-        result = subprocess.run(['zbarimg', '--quiet', '--raw', tmp], capture_output=True, text=True, timeout=10)
-        text = result.stdout.strip()
-        if not text:
-            # fallback: try pyzbar
-            from pyzbar.pyzbar import decode as pydecode
+        f.save(tmp)
+        text = ''
+
+        # Strategy 1: zbarimg (best for most QR codes) — try multiple methods
+        try:
+            import subprocess
+            # Decode image to PIL first, save as proper PNG (fixes JPEG/HEIC issues)
             from PIL import Image
-            decoded = pydecode(Image.open(tmp))
-            if decoded:
-                text = decoded[0].data.decode('utf-8')
-        os.remove(tmp)
+            img = Image.open(tmp)
+            # Convert to RGB and save as a clean PNG that zbarimg and pyzbar both love
+            if img.mode not in ('RGB', 'L'):
+                img = img.convert('RGB')
+            clean = tmp + '.clean.png'
+            img.save(clean, 'PNG')
+            try:
+                result = subprocess.run(
+                    ['zbarimg', '--quiet', '--raw', clean],
+                    capture_output=True, text=True, timeout=10
+                )
+                text = result.stdout.strip()
+            except (FileNotFoundError, OSError, subprocess.TimeoutExpired):
+                text = ''
+            finally:
+                if os.path.exists(clean):
+                    os.remove(clean)
+            if not text:
+                # Strategy 2: pyzbar (pure Python, no subprocess)
+                try:
+                    from pyzbar.pyzbar import decode as pydecode
+                    decoded = pydecode(Image.open(tmp))
+                    if decoded:
+                        text = decoded[0].data.decode('utf-8', errors='ignore')
+                except Exception:
+                    text = ''
+        except Exception as inner_err:
+            return jsonify({'error': f'Decode failed: {inner_err}'})
+
+        if not text:
+            return jsonify({'error': 'No QR code found in image. Use a clearer, well-lit photo.'})
         return jsonify({'text': text})
-    except Exception as e:
-        if os.path.exists(tmp): os.remove(tmp)
-        return jsonify({'error': str(e)})
+    finally:
+        if os.path.exists(tmp):
+            try: os.remove(tmp)
+            except: pass
 
 # ─── API: Student Stats ────────────────────────────────────────────────────────
 @app.route('/api/student/<int:sid>/balance')

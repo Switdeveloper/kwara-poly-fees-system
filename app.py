@@ -15,9 +15,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # ─── Auth ────────────────────────────────────────────────────────────────────
 @app.before_request
 def require_login():
-    if request.endpoint in ('login', 'static') or request.path.startswith('/static'):
+    if request.endpoint in ('login', 'static', 'public_verify', 'verify_page'):
         return
-    if 'admin_id' not in session and request.endpoint not in ('login',):
+    if request.path.startswith('/static') or request.path.startswith('/p/'):
+        return
+    if 'admin_id' not in session:
         return redirect(url_for('login'))
 
 # ─── Login ───────────────────────────────────────────────────────────────────
@@ -148,9 +150,8 @@ def receipt(receipt_no):
     if not r:
         return "Receipt not found", 404
 
-    # Embed any-device-verifiable link in QR
-    verify_url = url_for('link_verify', receipt_no=r['receipt_no'], matric=r['matric'],
-                         amount=r['amount_paid'], date=r['payment_date'], _external=True)
+    # Embed simple public verify URL in QR — anyone with the link can verify
+    verify_url = url_for('public_verify', receipt_no=r['receipt_no'], _external=True)
     img = qrcode.make(verify_url, error_correction=qrcode.constants.ERROR_CORRECT_H,
                       box_size=8, border=2)
     buf = io.BytesIO()
@@ -207,22 +208,46 @@ def link_verify():
                   'message': 'Receipt not found in Kwara Poly records.'}
     return render_template('verify.html', result=result)
 
+# ─── Public Verify (no login required) ───────────────────────────────────────
+@app.route('/p/<path:receipt_no>')
+def public_verify(receipt_no):
+    """Public verify URL — no login needed, anyone with the link can verify"""
+    conn = get_db()
+    r = conn.execute("""
+        SELECT p.*, s.fullname, s.matric, s.department, s.level, f.fee_type
+        FROM payments p
+        JOIN students s ON p.student_id=s.id
+        JOIN fees f ON p.fee_id=f.id
+        WHERE p.receipt_no=?
+    """, (receipt_no,)).fetchone()
+    conn.close()
+    if r:
+        result = {'valid': True, 'receipt_no': r['receipt_no'],
+                  'student_name': r['fullname'], 'matric': r['matric'],
+                  'department': r['department'], 'level': r['level'],
+                  'fee_type': r['fee_type'],
+                  'amount': f"₦{r['amount_paid']:,.0f}",
+                  'date': r['payment_date'], 'verified': bool(r['verified'])}
+    else:
+        result = {'valid': False, 'message': 'Receipt not found in Kwara Poly records.'}
+    return render_template('verify.html', result=result)
+
 # ─── Verify QR ────────────────────────────────────────────────────────────────
-@app.route('/verify')
+@app.route('/verify', methods=['GET', 'POST'])
 def verify_page():
     result = None
     if request.method == 'POST':
-        qr_text = request.form.get('qr_text', '').strip()
-        try:
-            data = json.loads(qr_text)
+        receipt_id = request.form.get('receipt_id', '').strip()
+        if receipt_id:
+            # Direct lookup by receipt ID
             conn = get_db()
             p = conn.execute("""
                 SELECT p.*, s.fullname, s.matric, s.department, s.level, f.fee_type
                 FROM payments p
                 JOIN students s ON p.student_id=s.id
                 JOIN fees f ON p.fee_id=f.id
-                WHERE p.receipt_no=? AND s.matric=? AND p.amount_paid=? AND p.payment_date=?
-            """, (data.get('receipt_no'), data.get('matric'), float(data.get('amount',0)), data.get('date'))).fetchone()
+                WHERE p.receipt_no=?
+            """, (receipt_id,)).fetchone()
             conn.close()
             if p:
                 result = {'valid': True, 'receipt_no': p['receipt_no'],
@@ -232,9 +257,7 @@ def verify_page():
                           'amount': f"₦{p['amount_paid']:,.0f}",
                           'date': p['payment_date'], 'verified': bool(p['verified'])}
             else:
-                result = {'valid': False, 'message': 'No matching payment record found in the system.'}
-        except (json.JSONDecodeError, KeyError, ValueError):
-            result = {'valid': False, 'message': 'Invalid QR code data format.'}
+                result = {'valid': False, 'message': f'❌ Receipt "{receipt_id}" not found in our records. Please check the ID and try again.'}
     return render_template('verify.html', result=result)
 
 @app.route('/verify_qr_image', methods=['POST'])

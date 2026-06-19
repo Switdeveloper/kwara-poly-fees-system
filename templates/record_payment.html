@@ -2,7 +2,8 @@
 {% block content %}
 <div class="row mb-3">
     <div class="col-12">
-        <h2>💰 Record Payment</h2>
+        <h2>💳 Make Payment</h2>
+        <p class="text-muted">Record new student payments securely</p>
     </div>
 </div>
 <div class="card p-4" style="max-width:600px">
@@ -32,10 +33,14 @@
         <div class="mb-3">
             <label>Payment Method</label>
             <select name="method" class="form-control">
-                <option>Cash</option><option>Transfer</option><option>POS</option><option>Bank Deposit</option>
+                <option>Bank Transfer</option>
+                <option>POS</option>
+                <option>Online Payment</option>
+                <option>Cheque</option>
+                <option>Bank Deposit</option>
             </select>
         </div>
-        <button type="submit" class="btn btn-success w-100">💾 Record Payment & Generate Receipt</button>
+        <button type="submit" class="btn btn-success btn-lg w-100" style="font-size:1.2rem;font-weight:bold">💳 PAY ₦<span id="payAmount">0</span></button>
     </form>
 </div>
 {% endblock %}
@@ -86,7 +91,15 @@ document.addEventListener('click', (e) => {
 
 feeSelect.addEventListener('change', function(){
     const opt = this.options[this.selectedIndex];
-    if(opt && opt.dataset.amount) amountInput.value = opt.dataset.amount;
+    if(opt && opt.dataset.amount) {
+        const amt = parseFloat(opt.dataset.amount);
+        amountInput.value = amt;
+        document.getElementById('payAmount').textContent = amt.toLocaleString();
+    }
+});
+amountInput.addEventListener('input', function(){
+    const v = parseFloat(this.value) || 0;
+    document.getElementById('payAmount').textContent = v.toLocaleString();
 });
 </script>
 {% endblock %}

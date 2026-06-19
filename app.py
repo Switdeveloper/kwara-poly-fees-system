@@ -15,7 +15,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # ─── Auth ────────────────────────────────────────────────────────────────────
 @app.before_request
 def require_login():
-    if request.endpoint in ('login', 'static', 'public_verify', 'verify_page'):
+    if request.endpoint in ('login', 'static', 'public_verify', 'verify_page', 'verify_qr_image'):
         return
     if request.path.startswith('/static') or request.path.startswith('/p/'):
         return

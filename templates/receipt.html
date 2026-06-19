@@ -1,27 +1,54 @@
 {% extends "base.html" %}
+{% block title %}Receipt {{ r.receipt_no }}{% endblock %}
 {% block content %}
-<div class="receipt-box text-center">
-    <h4 class="mb-1">📄 KWARA STATE POLYTECHNIC</h4>
-    <p class="text-muted">Payment Receipt</p>
-    <hr>
-    <h5 class="text-primary">{{ r.receipt_no }}</h5>
-    <hr>
-    <div class="text-start">
-        <p><strong>Student:</strong> {{ r.fullname }}</p>
-        <p><strong>Matric:</strong> {{ r.matric }}</p>
-        <p><strong>Department:</strong> {{ r.department }} ({{ r.level }})</p>
-        <p><strong>Fee Type:</strong> {{ r.fee_type }}</p>
-        <p><strong>Amount:</strong> ₦{{ "{:,.0f}".format(r.amount_paid) }}</p>
-        <p><strong>Date:</strong> {{ r.payment_date }}</p>
-        <p><strong>Method:</strong> {{ r.payment_method }}</p>
+<style>
+@media print {
+    body * { visibility: hidden; }
+    .receipt-box, .receipt-box * { visibility: visible; }
+    .receipt-box { position: absolute; left: 0; top: 0; width: 100%; border: none !important; }
+    .no-print { display: none !important; }
+}
+</style>
+<div class="receipt-box text-center" style="max-width:520px;margin:auto;background:#fff;padding:30px;border:2px solid #00d4ff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.1)">
+    <div style="border-bottom:2px solid #00d4ff;padding-bottom:10px;margin-bottom:15px">
+        <h3 style="margin:0;color:#1a1a2e">🏫 KWARA STATE POLYTECHNIC</h3>
+        <p style="margin:5px 0 0;color:#666;font-size:.9rem">Official Payment Receipt</p>
     </div>
-    <hr>
-    <p class="text-muted small">Scan QR to verify payment</p>
-    <img src="data:image/png;base64,{{ qr_b64 }}" class="qr-placeholder" alt="QR Code">
-    <hr>
-    <div class="d-flex gap-2 justify-content-center">
-        <button onclick="window.print()" class="btn btn-primary">🖨️ Print</button>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">← Back</a>
+
+    <div style="background:#f4f6f9;padding:8px;border-radius:6px;margin-bottom:15px">
+        <h5 style="margin:0;color:#1a1a2e;font-weight:700">Receipt No: {{ r.receipt_no }}</h5>
     </div>
+
+    <table style="width:100%;text-align:left;font-size:.95rem;margin:15px 0">
+        <tr><td style="padding:6px;color:#666">Student</td><td style="padding:6px;font-weight:600">{{ r.fullname }}</td></tr>
+        <tr><td style="padding:6px;color:#666">Matric No</td><td style="padding:6px;font-weight:600">{{ r.matric }}</td></tr>
+        <tr><td style="padding:6px;color:#666">Department</td><td style="padding:6px;font-weight:600">{{ r.department }} ({{ r.level }})</td></tr>
+        <tr><td style="padding:6px;color:#666">Fee Type</td><td style="padding:6px;font-weight:600">{{ r.fee_type }}</td></tr>
+        <tr><td style="padding:6px;color:#666">Amount Paid</td><td style="padding:6px;font-weight:700;color:#28a745;font-size:1.15rem">₦{{ "{:,.0f}".format(r.amount_paid) }}</td></tr>
+        <tr><td style="padding:6px;color:#666">Date</td><td style="padding:6px;font-weight:600">{{ r.payment_date }}</td></tr>
+        <tr><td style="padding:6px;color:#666">Method</td><td style="padding:6px;font-weight:600">{{ r.payment_method }}</td></tr>
+    </table>
+
+    <hr style="margin:20px 0">
+
+    <p style="margin:0 0 10px;color:#666;font-size:.85rem"><strong>📱 Scan QR to verify on any device</strong></p>
+    <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code"
+         style="width:220px;height:220px;border:1px solid #ddd;padding:10px;border-radius:8px">
+
+    <p style="margin:15px 0 5px;color:#666;font-size:.75rem">Or visit this link:</p>
+    <code style="font-size:.7rem;color:#00d4ff;word-break:break-all;display:block;padding:5px;background:#f4f6f9;border-radius:4px">
+        {{ verify_url }}
+    </code>
+
+    <div style="margin-top:20px;padding-top:15px;border-top:1px dashed #ccc;font-size:.8rem;color:#888">
+        <p style="margin:0">🔒 <strong>Authenticity:</strong> Encoded in QR — matches school database</p>
+        <p style="margin:5px 0 0">⚠️ Treat this receipt with care</p>
+    </div>
+</div>
+
+<div class="text-center mt-3 no-print">
+    <button onclick="window.print()" class="btn btn-primary">🖨️ Print Receipt</button>
+    <a href="https://wa.me/?text={{ ('Payment Receipt %s | %s | ₦%s'.format(r.receipt_no, r.fullname, '{:,.0f}'.format(r.amount_paid))) | urlencode }}%20{{ verify_url | urlencode }}" class="btn btn-success" target="_blank">📤 Share on WhatsApp</a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">← Back</a>
 </div>
 {% endblock %}

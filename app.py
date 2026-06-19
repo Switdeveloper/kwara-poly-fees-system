@@ -134,7 +134,7 @@ def record_payment():
     return redirect(url_for('receipt', receipt_no=receipt_no))
 
 # ─── Receipt with QR ──────────────────────────────────────────────────────────
-@app.route('/receipt/<receipt_no>')
+@app.route('/receipt/<path:receipt_no>')
 def receipt(receipt_no):
     conn = get_db()
     r = conn.execute("""
@@ -148,19 +148,15 @@ def receipt(receipt_no):
     if not r:
         return "Receipt not found", 404
 
-    # Generate QR with receipt data
-    qr_data = json.dumps({
-        'receipt_no': r['receipt_no'],
-        'matric': r['matric'],
-        'amount': r['amount_paid'],
-        'date': r['payment_date'],
-        'fee': r['fee_type']
-    }, separators=(',', ':'))
-    img = qrcode.make(qr_data)
+    # Embed any-device-verifiable link in QR
+    verify_url = url_for('link_verify', receipt_no=r['receipt_no'], matric=r['matric'],
+                         amount=r['amount_paid'], date=r['payment_date'], _external=True)
+    img = qrcode.make(verify_url, error_correction=qrcode.constants.ERROR_CORRECT_H,
+                      box_size=8, border=2)
     buf = io.BytesIO()
     img.save(buf, 'PNG')
     qr_b64 = base64.b64encode(buf.getvalue()).decode()
-    return render_template('receipt.html', r=r, qr_b64=qr_b64)
+    return render_template('receipt.html', r=r, qr_b64=qr_b64, verify_url=verify_url)
 
 # ─── All Payments ─────────────────────────────────────────────────────────────
 @app.route('/payments')
@@ -175,6 +171,41 @@ def payments_page():
     """).fetchall()
     conn.close()
     return render_template('payments.html', payments=payments)
+
+@app.route('/link_verify')
+def link_verify():
+    """Direct verification via QR-scanned URL — works on any device"""
+    receipt_no = request.args.get('receipt_no', '')
+    matric = request.args.get('matric', '')
+    try:
+        amount = float(request.args.get('amount', '0'))
+    except ValueError:
+        amount = 0
+    date = request.args.get('date', '')
+    if not (receipt_no and matric and date):
+        return render_template('verify.html',
+                               result={'valid': False,
+                                       'message': 'Missing required data parameters.'})
+    conn = get_db()
+    p = conn.execute("""
+        SELECT p.*, s.fullname, s.matric, s.department, s.level, f.fee_type
+        FROM payments p
+        JOIN students s ON p.student_id=s.id
+        JOIN fees f ON p.fee_id=f.id
+        WHERE p.receipt_no=? AND s.matric=? AND p.amount_paid=? AND p.payment_date=?
+    """, (receipt_no, matric, amount, date)).fetchone()
+    conn.close()
+    if p:
+        result = {'valid': True, 'receipt_no': p['receipt_no'],
+                  'student_name': p['fullname'], 'matric': p['matric'],
+                  'department': p['department'], 'level': p['level'],
+                  'fee_type': p['fee_type'],
+                  'amount': f"₦{p['amount_paid']:,.0f}",
+                  'date': p['payment_date'], 'verified': bool(p['verified'])}
+    else:
+        result = {'valid': False,
+                  'message': 'Receipt not found in Kwara Poly records.'}
+    return render_template('verify.html', result=result)
 
 # ─── Verify QR ────────────────────────────────────────────────────────────────
 @app.route('/verify')

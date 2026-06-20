@@ -30,6 +30,15 @@ echo.
 :: --- Step 1: setup tunnel folder -----------------------------
 if not exist "%CF_DIR%" mkdir "%CF_DIR%"
 
+:: --- Step 1.5: bundle libzbar DLL into tunnel-dir for offline QR
+::              pyzbar searches next to its __init__.py + next to python.exe
+::              we copy it next to python.exe at venv; for system python
+::              we drop it in the tunnel folder and add it to PATH for the session.
+if exist "%~dp0vendor\libzbar-64.dll" (
+    copy /Y "%~dp0vendor\libzbar-64.dll" "%CF_DIR%\libzbar-64.dll" >nul
+    echo [setup] libzbar DLL bundled for offline QR scanning.
+)
+
 :: --- Step 2: ensure cloudflared.exe exists -------------------
 if not exist "%CF_EXE%" (
   echo [setup] Downloading cloudflared (one-time only) ...

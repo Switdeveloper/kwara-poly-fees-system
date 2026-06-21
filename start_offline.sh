@@ -75,6 +75,12 @@ echo
 echo "  =================================================="
 echo "   OFFLINE SERVER READY"
 echo
+# Auto-open browser if possible
+if command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "http://127.0.0.1:$PORT" >/dev/null 2>&1 &
+elif command -v gnome-open >/dev/null 2>&1; then
+    gnome-open "http://127.0.0.1:$PORT" >/dev/null 2>&1 &
+fi
 echo "   Login  : http://127.0.0.1:$PORT/   (admin / admin123)"
 echo "   Verify : http://127.0.0.1:$PORT/verify"
 if [ -n "$LAN_IP" ]; then

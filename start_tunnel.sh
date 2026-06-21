@@ -108,6 +108,12 @@ echo "  PUBLIC TUNNEL URL:  ${URL}"
 echo "  PUBLIC VERIFY URL:  ${URL}/verify"
 echo "  PUBLIC RECEIPT URL: ${URL}/p/KWP/xxxxxxx"
 echo "===================================================================="
+# Auto-open browser if possible
+if command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "${URL}" >/dev/null 2>&1 &
+elif command -v gnome-open >/dev/null 2>&1; then
+    gnome-open "${URL}" >/dev/null 2>&1 &
+fi
 echo "  Share the URL with anyone — any browser worldwide."
 echo "  The URL has been COPIED to your clipboard (if a clipboard tool is installed)."
 echo ""

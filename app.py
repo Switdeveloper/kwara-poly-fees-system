@@ -6,10 +6,12 @@ Flask + SQLite + QR Code
 import os, sqlite3, qrcode, io, base64, hashlib, json
 from datetime import date, datetime
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_file
+from werkzeug.middleware.proxy_fix import ProxyFix
 from database import get_db, init_db, generate_receipt_no
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ─── Auth ────────────────────────────────────────────────────────────────────
@@ -307,8 +309,8 @@ def verify_qr_image():
                         text = decoded[0].data.decode('utf-8', errors='ignore')
                 except Exception:
                     text = ''
-        except Exception as inner_err:
-            return jsonify({'error': f'Decode failed: {inner_err}'})
+        except Exception:
+            return jsonify({'error': 'Failed to decode QR code. Please try a clearer, well-lit image.'})
 
         if not text:
             return jsonify({'error': 'No QR code found in image. Use a clearer, well-lit photo.'})

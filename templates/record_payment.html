@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12">
+        <h2>💳 Make Payment</h2>
+        <p class="text-muted">Record new student payments securely</p>
+    </div>
+</div>
+<div class="card p-4" style="max-width:600px">
+    <form method="POST" id="paymentForm">
+        <div class="mb-3">
+            <label>Search Student</label>
+            <input type="text" id="studentSearch" class="form-control" placeholder="Type matric or name..." autocomplete="off">
+            <input type="hidden" name="student_id" id="student_id" required>
+            <div id="studentResults" class="list-group mt-1" style="display:none;max-height:200px;overflow-y:auto"></div>
+        </div>
+        <div class="mb-3">
+            <p id="selectedStudent" class="text-muted small">No student selected</p>
+        </div>
+        <div class="mb-3">
+            <label>Fee Type</label>
+            <select name="fee_id" class="form-control" required id="feeSelect">
+                <option value="">-- Select Fee --</option>
+                {% for f in fees %}
+                <option value="{{ f.id }}" data-amount="{{ f.amount }}">{{ f.fee_type }} (₦{{ "{:,.0f}".format(f.amount) }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label>Amount (₦)</label>
+            <input type="number" name="amount" id="amountInput" class="form-control" step="0.01" required>
+        </div>
+        <div class="mb-3">
+            <label>Payment Method</label>
+            <select name="method" class="form-control">
+                <option>Bank Transfer</option>
+                <option>POS</option>
+                <option>Online Payment</option>
+                <option>Cheque</option>
+                <option>Bank Deposit</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-success btn-lg w-100" style="font-size:1.2rem;font-weight:bold">💳 PAY ₦<span id="payAmount">0</span></button>
+    </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const searchInput = document.getElementById('studentSearch');
+const resultsDiv = document.getElementById('studentResults');
+const studentIdInput = document.getElementById('student_id');
+const selectedP = document.getElementById('selectedStudent');
+const feeSelect = document.getElementById('feeSelect');
+const amountInput = document.getElementById('amountInput');
+
+let debounceTimer;
+searchInput.addEventListener('input', function(){
+    clearTimeout(debounceTimer);
+    const q = this.value.trim();
+    if(q.length < 2) { resultsDiv.style.display='none'; return; }
+    debounceTimer = setTimeout(() => {
+        fetch('/search_student?q=' + encodeURIComponent(q))
+            .then(r => r.json())
+            .then(data => {
+                resultsDiv.innerHTML = '';
+                if(data.length === 0) {
+                    resultsDiv.innerHTML = '<div class="list-group-item text-muted">No results</div>';
+                } else {
+                    data.forEach(s => {
+                        const a = document.createElement('a');
+                        a.href = '#';
+                        a.className = 'list-group-item list-group-item-action';
+                        a.innerHTML = `<strong>${s.matric}</strong> — ${s.fullname}<br><small>${s.department} (${s.level})</small>`;
+                        a.onclick = (e) => {
+                            e.preventDefault();
+                            studentIdInput.value = s.id;
+                            searchInput.value = s.matric + ' — ' + s.fullname;
+                            selectedP.textContent = `Selected: ${s.fullname} (${s.matric}, ${s.department})`;
+                            resultsDiv.style.display = 'none';
+                        };
+                        resultsDiv.appendChild(a);
+                    });
+                }
+                resultsDiv.style.display = 'block';
+            });
+    }, 300);
+});
+document.addEventListener('click', (e) => {
+    if(!e.target.closest('#studentSearch') && !e.target.closest('#studentResults')) resultsDiv.style.display='none';
+});
+
+feeSelect.addEventListener('change', function(){
+    const opt = this.options[this.selectedIndex];
+    if(opt && opt.dataset.amount) {
+        const amt = parseFloat(opt.dataset.amount);
+        amountInput.value = amt;
+        document.getElementById('payAmount').textContent = amt.toLocaleString();
+    }
+});
+amountInput.addEventListener('input', function(){
+    const v = parseFloat(this.value) || 0;
+    document.getElementById('payAmount').textContent = v.toLocaleString();
+});
+</script>
+{% endblock %}

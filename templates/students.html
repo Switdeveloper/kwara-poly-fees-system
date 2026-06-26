@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12"><h2>👥 Students</h2></div>
+</div>
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card p-4">
+            <h5>Add New Student</h5>
+            <form method="POST">
+                <div class="mb-2">
+                    <label>Matric Number</label>
+                    <input type="text" name="matric" class="form-control" placeholder="e.g., 2024/CS/001" required>
+                </div>
+                <div class="mb-2">
+                    <label>Full Name</label>
+                    <input type="text" name="fullname" class="form-control" required>
+                </div>
+                <div class="mb-2">
+                    <label>Department</label>
+                    <input type="text" name="department" class="form-control" placeholder="e.g., Computer Science" required>
+                </div>
+                <div class="mb-2">
+                    <label>Level</label>
+                    <select name="level" class="form-control">
+                        <option>ND1</option><option>ND2</option><option>HND1</option><option>HND2</option>
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label>Session</label>
+                    <input type="text" name="session" class="form-control" value="2024/2025">
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Add Student</button>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card p-3">
+            <h5>All Students ({{ students|length }})</h5>
+            <input type="text" id="searchInput" class="form-control mb-2" placeholder="Search by name or matric...">
+            <div style="max-height:500px;overflow-y:auto">
+            <table class="table table-sm table-hover" id="studentTable">
+                <thead><tr><th>Matric</th><th>Name</th><th>Dept</th><th>Level</th><th>Action</th></tr></thead>
+                <tbody>
+                    {% for s in students %}
+                    <tr>
+                        <td>{{ s.matric }}</td>
+                        <td>{{ s.fullname }}</td>
+                        <td>{{ s.department }}</td>
+                        <td>{{ s.level }}</td>
+                        <td><a href="{{ url_for('student_detail', sid=s.id) }}" class="btn btn-sm btn-outline-primary">View</a></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="text-center text-muted">No students yet</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('searchInput')?.addEventListener('keyup', function(){
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('#studentTable tbody tr').forEach(r => {
+        r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

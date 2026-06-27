@@ -2,7 +2,7 @@
 {% block login_content %}
 <style>
     body {
-        background: url("{{ url_for('static', filename='logo.png') }}") center/cover no-repeat fixed;
+        background: url("{{ url_for('static', filename='background.png') }}") center/cover no-repeat fixed;
         background-color: #f4f6f9;
         background-blend-mode: overlay;
         background-color: rgba(244, 246, 249, 0.9);
@@ -57,11 +57,11 @@
     <form method="POST">
         <div class="mb-3">
             <label>Username</label>
-            <input type="text" name="username" class="form-control" placeholder="admin" required autofocus>
+            <input type="text" name="username" class="form-control" placeholder="" required autofocus>
         </div>
         <div class="mb-3">
             <label>Password</label>
-            <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+            <input type="password" name="password" class="form-control" placeholder="" required>
         </div>
         <button type="submit" class="btn btn-primary w-100">Login</button>
     </form>
